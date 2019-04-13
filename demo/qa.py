@@ -20,7 +20,8 @@ class MemN2N(object):
     MemN2N class
     """
     def __init__(self, data_dir, model_file):
-        self.data_dir       = data_dir
+
+        self.data_dir   = data_dir
         self.model_file     = model_file
         self.reversed_dict  = None
         self.memory         = None
@@ -46,16 +47,28 @@ class MemN2N(object):
         Train MemN2N model using training data for tasks.
         """
         np.random.seed(42)  # for reproducing
-        assert self.data_dir is not None, "data_dir is not specified."
-        print("Reading data from %s ..." % self.data_dir)
-
+        train_data_arg = None
+        test_data_arg = None
+        if type(self.data_dir) is tuple:
+            assert self.data_dir[0] is not None, "training data_dir is not specified."
+            assert self.data_dir[1] is not None, "test data_dir is not specified."
+            print("Reading training data from %s ..." % self.data_dir[0])
+            print("Reading test data from %s ..." % self.data_dir[1])
+            train_data_arg = '%s/qa*_train.txt' % self.data_dir[0]
+            test_data_arg = '%s/qa*_valid.txt' % self.data_dir[1]
+        else:
+            assert self.data_dir is not None, "data_dir is not specified."
+            print("Reading data from %s ..." % self.data_dir)
+            train_data_arg = '%s/qa*_*_train.txt' % self.data_dir
+            test_data_arg = '%s/qa*_*_test.txt' % self.data_dir
+        assert train_data_arg is not None and test_data_arg is not None
         # Parse training data
-        train_data_path = glob.glob('%s/qa*_*_train.txt' % self.data_dir)
+        train_data_path = glob.glob(train_data_arg)
         dictionary = {"nil": 0}
         train_story, train_questions, train_qstory = parse_babi_task(train_data_path, dictionary, False)
 
         # Parse test data just to expand the dictionary so that it covers all words in the test data too
-        test_data_path = glob.glob('%s/qa*_*_test.txt' % self.data_dir)
+        test_data_path = glob.glob(test_data_arg)
         parse_babi_task(test_data_path, dictionary, False)
 
         # Get reversed dictionary mapping index to word
@@ -205,7 +218,7 @@ def run_console_demo(data_dir, model_file):
         print("\n* Suggested question:\n\t%s?" % question_txt)
 
         while True:
-            user_question = raw_input("Your question (press Enter to use the suggested question):\n\t")
+            user_question = input("Your question (press Enter to use the suggested question):\n\t")
 
             pred_answer_idx, pred_prob, memory_probs = \
                 memn2n.predict_answer(test_story, test_questions, test_qstory,
@@ -227,10 +240,10 @@ def run_console_demo(data_dir, model_file):
                 prob_output = "\t".join(["%.3f" % mem_prob for mem_prob in memory_probs[:, sent_idx]])
                 print("%s\t%s" % (prob_output, sent_txt))
 
-            asking_another_question = raw_input("\nDo you want to ask another question? [y/N] ")
+            asking_another_question = input("\nDo you want to ask another question? [y/N] ")
             if asking_another_question == '' or asking_another_question.lower() == 'n': break
 
-        will_continue = raw_input("Do you want to continue? [Y/n] ")
+        will_continue = input("Do you want to continue? [Y/n] ")
         if will_continue != '' and will_continue.lower() != 'y': break
         print("=" * 70)
 
@@ -253,11 +266,28 @@ if __name__ == "__main__":
                        help="run console-based demo (default: %(default)s)")
     group.add_argument("-web", "--web-demo", action="store_true", default=True,
                        help="run web-based demo (default: %(default)s)")
+    parser.add_argument("-d2", "--data-dir2", default=None,
+                        help="path to directory containing a training and testing directory)")
     args = parser.parse_args()
 
     if not os.path.exists(args.data_dir):
         print("The data directory '%s' does not exist. Please download it first." % args.data_dir)
         sys.exit(1)
+
+    if args.data_dir2 is not None:
+        if not os.path.exists(args.data_dir2):
+            print("The data directory '%s' does not exist." % args.data_dir)
+            sys.exit(1)
+        else:
+            train_path = os.path.join(args.data_dir2, 'train')
+            if not os.path.exists(train_path):
+                print("'%s' does not exist." % train_path)
+                sys.exit(1)
+            test_path = os.path.join(args.data_dir2, 'test')
+            if not os.path.exists(test_path):
+                print("'%s' does not exist." % test_path)
+                sys.exit(1)
+            args.data_dir = train_path, test_path
 
     if args.train:
         train_model(args.data_dir, args.model_file)

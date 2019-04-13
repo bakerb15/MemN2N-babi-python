@@ -22,8 +22,12 @@ def init(data_dir, model_file):
     memn2n.load_model()
 
     # Read test data
-    print("Reading test data from %s ..." % memn2n.data_dir)
-    test_data_path = glob.glob('%s/qa*_*_test.txt' % memn2n.data_dir)
+    if type(memn2n.data_dir) is tuple:
+        print("Reading test data from %s ..." % memn2n.data_dir[1])
+        test_data_path = glob.glob('%s/qa*_valid.txt' % memn2n.data_dir[1])
+    else:
+        print("Reading test data from %s ..." % memn2n.data_dir)
+        test_data_path = glob.glob('%s/qa*_*_test.txt' % memn2n.data_dir)
     test_story, test_questions, test_qstory = \
         parse_babi_task(test_data_path, memn2n.general_config.dictionary, False)
 

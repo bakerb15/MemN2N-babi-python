@@ -621,8 +621,10 @@ class CrossEntropyLoss(Loss):
 
     def fprop(self, input_data, target_data):
         tmp = [(t, i) for i, t in enumerate(target_data)]
-        z = zip(*tmp)  # unzipping trick !
-        cost = np.sum(-np.log(input_data[z]))
+
+        # z = zip(*tmp)  # unzipping trick ! # python
+        z = [x for x in zip(*tmp)]
+        cost = np.sum(-np.log(input_data[tuple(z)]))
         if self.size_average:
             cost /= input_data.shape[1]
 
@@ -630,14 +632,15 @@ class CrossEntropyLoss(Loss):
 
     def bprop(self, input_data, target_data):
         tmp = [(t, i) for i, t in enumerate(target_data)]
-        z = zip(*tmp)
+        # z = zip(*tmp)  # unzipping trick ! # python
+        z = [x for x in zip(*tmp)]
 
         if self.do_softmax_bprop:
             grad_input = input_data
-            grad_input[z] -= 1
+            grad_input[tuple(z)] -= 1
         else:
             grad_input = np.zeros_like(input_data, np.float32)
-            grad_input[z] = -1. / (input_data[z] + self.eps)
+            grad_input[z] = -1. / (input_data[tuple(z)] + self.eps)
 
         if self.size_average:
             grad_input /= input_data.shape[1]

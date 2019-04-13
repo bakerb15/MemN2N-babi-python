@@ -1,3 +1,4 @@
 .idea
 *.pyc
 data/tasks_1-20_v1-2
+venv/
