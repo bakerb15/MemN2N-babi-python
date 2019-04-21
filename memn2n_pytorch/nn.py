@@ -46,14 +46,22 @@ class MatVecProdPytorch(nn.Module):
         """
 
     def __init__(self, do_transpose):
-        super(MatVecProd, self).__init__()
+        super(MatVecProdPytorch, self).__init__()
         self.do_transpose = do_transpose
 
     def forward(self, input_data):
         M = input_data[0]
         V = input_data[1]
 
+        batch_size = M.shape[2]
+
         if self.do_transpose:
-            pass
+            output = torch.zeros((M.shape[1], batch_size)).type(M.dtype)
+            for i in range(batch_size):
+                output[:, i] = torch.matmul(M[:, :, i].t(), V[:, i])
         else:
-            pass
+            output = torch.zeros((M.shape[0], batch_size)).type(M.dtype)
+            for i in range(batch_size):
+                output[:, i] = torch.matmul(M[:, :, i], V[:, i])
+
+        return output
