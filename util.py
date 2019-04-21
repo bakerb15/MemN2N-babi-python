@@ -10,6 +10,8 @@ from memn2n.nn import AddTable, CrossEntropyLoss, Duplicate, ElemMult, LinearNB
 from memn2n.nn import Identity, ReLU, Sequential, LookupTable, Sum, Parallel, Softmax
 
 
+
+
 def parse_babi_task(data_files, dictionary, include_question):
     """ Parse bAbI data.
 
@@ -217,6 +219,8 @@ def build_model(general_config):
     model.modules[-1].skip_bprop = True
 
     return memory, model, loss
+
+
 
 
 class Progress(object):

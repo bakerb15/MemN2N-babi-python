@@ -20,7 +20,7 @@ class MemN2N(object):
     MemN2N class
     """
     def __init__(self, data_dir, model_file):
-
+        # original ###############
         self.data_dir   = data_dir
         self.model_file     = model_file
         self.reversed_dict  = None
@@ -28,24 +28,30 @@ class MemN2N(object):
         self.model          = None
         self.loss           = None
         self.general_config = None
+        ###########################
 
     def save_model(self):
+        """ original
         with gzip.open(self.model_file, "wb") as f:
             print("Saving model to file %s ..." % self.model_file)
             pickle.dump((self.reversed_dict, self.memory, self.model, self.loss, self.general_config), f)
+        """
 
     def load_model(self):
+        """ original
         # Check if model was loaded
         if self.reversed_dict is None or self.memory is None or \
                 self.model is None or self.loss is None or self.general_config is None:
             print("Loading model from file %s ..." % self.model_file)
             with gzip.open(self.model_file, "rb") as f:
                 self.reversed_dict, self.memory, self.model, self.loss, self.general_config = pickle.load(f)
+        """
 
     def train(self):
         """
         Train MemN2N model using training data for tasks.
         """
+
         np.random.seed(42)  # for reproducing
         train_data_arg = None
         test_data_arg = None
@@ -185,8 +191,11 @@ class MemN2N(object):
 
 
 def train_model(data_dir, model_file):
+    """ original
     memn2n = MemN2N(data_dir, model_file)
     memn2n.train()
+    """
+
 
 
 def run_console_demo(data_dir, model_file):
@@ -254,12 +263,10 @@ def run_web_demo(data_dir, model_file):
     webapp.run()
 
 if __name__ == "__main__":
-    # run with options -train -d2 /home/bbaker/nlp-final-project/bAbI/data
-
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--data-dir", default="data/tasks_1-20_v1-2/en",
                         help="path to dataset directory (default: %(default)s)")
-    parser.add_argument("-m", "--model-file", default="trained_model/memn2n_model.pklz",
+    parser.add_argument("-m", "--model-file", default="trained_model_pytorch/memn2n_model_pytorch.pklz",
                         help="model file (default: %(default)s)")
     group = parser.add_mutually_exclusive_group()
     group.add_argument("-train", "--train", action="store_true",
