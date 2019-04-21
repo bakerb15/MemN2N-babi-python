@@ -27,8 +27,8 @@ def run_test(data_dir, task_id, memn2n):
         test_files = glob.glob('%s/qa%d_*_valid.txt' % (data_dir[1], task_id))
     else:
         test_files = glob.glob('%s/qa%d_*_test.txt' % (data_dir, task_id))
-    dictionary = {"nil": 0}
-    test_story, test_questions, test_qstory = parse_babi_task(test_files, dictionary, False)
+
+    test_story, test_questions, test_qstory = parse_babi_task(test_files, memn2n.general_config.dictionary, False)
 
     """
     reversed_dict = None
