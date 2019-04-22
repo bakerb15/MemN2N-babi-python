@@ -1,4 +1,12 @@
 import numpy as np
+from enum import Enum
+
+class ModelType(Enum):
+    original = 1
+    pytorch = 2
+    pytorch_cuda = 3
+
+
 
 class BabiConfig(object):
     """

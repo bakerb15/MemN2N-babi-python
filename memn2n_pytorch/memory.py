@@ -11,7 +11,7 @@ import nltk
 from copy import deepcopy
 
 
-from memn2n_pytorch.nn import ElemMultPytorch, SumPytorch
+from memn2n_pytorch.nn import ElemMultPytorch, SumPytorch, MatVecProdPytorch
 
 
 class Memory(nn.Module):
@@ -40,6 +40,7 @@ class Memory(nn.Module):
         self.mod_query = None
         self.mod_out = None
         self.probs = None
+        self.output = None
 
         self.init_query_module()
         self.init_output_module()
@@ -56,6 +57,7 @@ class Memory(nn.Module):
         self.mod_query.add(MatVecProd(True))
         self.mod_query.add(Softmax())
         """
+        pass
 
     def init_output_module(self):
         """
@@ -68,6 +70,7 @@ class Memory(nn.Module):
         self.mod_out.add(p)
         self.mod_out.add(MatVecProd(False))
         """
+        pass
 
     def reset(self):
         self.data[:] = self.nil_word
@@ -76,6 +79,12 @@ class Memory(nn.Module):
         self.data[1:, :] = self.data[:-1, :]  # shift rows down
         self.data[0, :] = data_row  # add the new data row on top
 
+    def forward(self, input_data):
+        self.probs = self.mod_query.forward([self.data, input_data])
+        self.output = self.mod_out.forward([self.data, self.probs])
+        return self.output
+
+    """
     def fprop(self, input_data):
         self.probs = self.mod_query.fprop([self.data, input_data])
         self.output = self.mod_out.fprop([self.data, self.probs])
@@ -86,11 +95,13 @@ class Memory(nn.Module):
         g2 = self.mod_query.bprop([self.data, input_data], g1[1])
         self.grad_input = g2[1]
         return self.grad_input
-
+    """
+    """
     def update(self, params):
         self.mod_out.update(params)
         self.mod_query.update(params)
         self.emb_out.weight.D[:, self.nil_word] = 0
+    """
 
     def share(self, m):
         pass
@@ -168,21 +179,24 @@ class MemoryL(Memory):
         """
 
         self.emb_query = nn.Embedding(self.voc_sz, self.in_dim)
-        emb_query_layers = []
-        emb_query_layers.append(self.emb_query)
-        emb_query_layers.append(ElemMultPytorch(self.config["weight"]))
-        emb_query_layers.append(SumPytorch(dim=1))
+        emb_query_layers = [
+            self.emb_query,
+            ElemMultPytorch(self.config["weight"]),
+            SumPytorch(dim=1)]
         s = nn.Sequential(*emb_query_layers)
 
-        mod_query_layers = []
-        mod_query_layers.append(s)
-        mod_query_layers.append(MatV)
+        mod_query_layers = [
+            s,
+            MatVecProdPytorch(True),
+            nn.Softmax()]
+        self.mod_query = nn.Sequential(*mod_query_layers)
 
 
 
 
 
     def init_output_module(self):
+        """
         self.emb_out = LookupTable(self.voc_sz, self.out_dim)
         s = Sequential()
         s.add(self.emb_out)
@@ -196,3 +210,16 @@ class MemoryL(Memory):
         self.mod_out = Sequential()
         self.mod_out.add(p)
         self.mod_out.add(MatVecProd(False))
+        """
+
+        self.emb_query = nn.Embedding(self.voc_sz, self.in_dim)
+        emb_query_layers = [
+            self.emb_query,
+            ElemMultPytorch(self.config["weight"]),
+            SumPytorch(dim=1)]
+        s = nn.Sequential(*emb_query_layers)
+
+        mod_query_layers = [
+            s,
+            MatVecProdPytorch(False)]
+        self.mod_query = nn.Sequential(*mod_query_layers)

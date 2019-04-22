@@ -1,9 +1,10 @@
-from memn2n.nn import MatVecProd
+from memn2n.nn import MatVecProd, Softmax
 from memn2n_pytorch.nn import MatVecProdPytorch
 import numpy as np
 import copy
 
 import torch
+import torch.nn as nn
 
 
 # compare MetVecPrd and MatVecProdPytorch with and without transpose option set
@@ -14,9 +15,10 @@ with fist being matrix (50, 50, 32) and second being a vector (50, 32)
 
 USE_CUDA = False
 
-testcount = 2
+testcount = 3
 TEST0 = True
 TEST1 = True
+TEST2 = True
 
 tests = [None for i in range(testcount)]
 
@@ -42,20 +44,38 @@ if TEST0:
 if TEST1:
     tests[1] = True
     for i in range(10):
+        M = np.random.rand(224, 32)
+
+        input_data = M
+        input_data_torch = torch.from_numpy(M).type(FloatTensor)
+        sfmx = Softmax()
+        sfmx_torch = nn.Softmax(dim=0)
+        result_1 = sfmx.fprop(input_data)
+        result_2 = sfmx_torch.forward(input_data_torch)
+        try:
+            result_2_np = result_2.data.numpy()
+            assert np.allclose(result_1, result_2_np)
+        except AssertionError:
+            tests[1] = False
+
+if TEST2:
+    tests[2] = True
+    for i in range(10):
         M = np.random.rand(*matrix_batch_dim)
         V = np.random.rand(*vect_batch_dim)
 
         input_data = [M, V]
         input_data_torch = [torch.from_numpy(M).type(FloatTensor), torch.from_numpy(V).type(FloatTensor)]
-        mvp = MatVecProd(True)
-        mvp_pt = MatVecProdPytorch(True)
+        transpose = i % 2 == 0
+        mvp = MatVecProd(transpose)
+        mvp_pt = MatVecProdPytorch(transpose)
         result_1 = mvp.fprop(input_data)
         result_2 = mvp_pt.forward(input_data_torch)
         try:
             result_2_np = result_2.data.numpy()
             assert np.allclose(result_1, result_2_np)
         except AssertionError:
-            tests[1] = False
+            tests[2] = False
 
 for i in range(len(tests)):
     if tests[i] is True:
