@@ -65,3 +65,31 @@ class MatVecProdPytorch(nn.Module):
                 output[:, i] = torch.matmul(M[:, :, i], V[:, i])
 
         return output
+
+
+class Duplicate(nn.Module):
+
+    def __init__(self):
+        super(Duplicate, self).__init__()
+
+    def forward(self, input_data):
+        return [input_data, input_data]
+
+
+class Identity(nn.Module):
+
+    def __init__(self):
+        super(Identity, self).__init__()
+
+    def forward(self, input_data):
+        return input_data
+
+class AddTable(nn.Module):
+    """
+    Module for sum operator which sums up all elements in input data
+    """
+    def __init__(self):
+        super(AddTable, self).__init__()
+
+    def forward(self, input_data):
+        return input_data.sum(0)

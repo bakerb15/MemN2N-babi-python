@@ -12,14 +12,14 @@ import numpy as np
 
 from config import BabiConfigJoint
 from train_test import train, train_linear_start
-from util import parse_babi_task, build_model
+from util import parse_babi_task, build_model, build_model_pytorch
 
 
 class MemN2N(object):
     """
     MemN2N class
     """
-    def __init__(self, data_dir, model_file):
+    def __init__(self, data_dir, model_file, use_cuda=False):
         # original ###############
         self.data_dir   = data_dir
         self.model_file     = model_file
@@ -28,6 +28,7 @@ class MemN2N(object):
         self.model          = None
         self.loss           = None
         self.general_config = None
+        self.USE_CUDA = use_cuda
         ###########################
 
     def save_model(self):

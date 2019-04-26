@@ -1,5 +1,6 @@
-from memn2n.nn import MatVecProd, Softmax
+from memn2n.nn import MatVecProd, Softmax, AddTable
 from memn2n_pytorch.nn import MatVecProdPytorch
+from memn2n_pytorch.nn import AddTable as ptAddTable
 import numpy as np
 import copy
 
@@ -15,10 +16,11 @@ with fist being matrix (50, 50, 32) and second being a vector (50, 32)
 
 USE_CUDA = False
 
-testcount = 3
+testcount = 4
 TEST0 = True
 TEST1 = True
 TEST2 = True
+TEST3 = True
 
 tests = [None for i in range(testcount)]
 
@@ -76,6 +78,19 @@ if TEST2:
             assert np.allclose(result_1, result_2_np)
         except AssertionError:
             tests[2] = False
+
+if TEST3:
+    tests[3] = True
+    input = [np.random.rand(50, 32).astype('f'), np.random.rand(50, 32).astype('f')]
+    input_pt = torch.from_numpy(np.array(input)).type(FloatTensor)
+
+    output = AddTable().fprop(input)
+    output_pt = ptAddTable().forward(input_pt)
+    try:
+        assert np.array_equal(output, output_pt.data.numpy()) is True
+    except AssertionError:
+        tests[3] = False
+
 
 for i in range(len(tests)):
     if tests[i] is True:
