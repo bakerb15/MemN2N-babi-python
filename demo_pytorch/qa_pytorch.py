@@ -95,12 +95,12 @@ class MemN2N(object):
         self.memory, self.model, self.loss = build_model_pytorch(self.general_config)
 
         # Train model
-        # if self.general_config.linear_start:
-        #     train_linear_start(train_story, train_questions, train_qstory,
-        #                        self.memory, self.model, self.loss, self.general_config)
-        # else:
-        #     train(train_story, train_questions, train_qstory,
-        #           self.memory, self.model, self.loss, self.general_config)
+        if self.general_config.linear_start:
+            train_linear_start(train_story, train_questions, train_qstory,
+                               self.memory, self.model, self.loss, self.general_config)
+        else:
+            train(train_story, train_questions, train_qstory,
+                  self.memory, self.model, self.loss, self.general_config)
 
         # Save model
         self.save_model()
