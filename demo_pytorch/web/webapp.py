@@ -4,6 +4,7 @@ Web-based demo
 import glob
 import flask
 import numpy as np
+import torch
 
 from demo.qa import MemN2N
 from util import parse_babi_task

@@ -301,7 +301,8 @@ class LinearNB(Module):
             input_data = input_data.reshape(input_data.shape[0], -1)
 
         if self.do_transpose:
-            self.output = np.dot(self.weight.D.T, input_data)
+            mt = self.weight.D.T
+            self.output = np.dot(mt, input_data)
         else:
             self.output = np.dot(self.weight.D, input_data)
 
@@ -649,4 +650,5 @@ class CrossEntropyLoss(Loss):
 
     def get_error(self, input_data, target_data):
         y = input_data.argmax(axis=0)
-        return np.sum(y != target_data)
+        out = np.sum(y != target_data)
+        return out

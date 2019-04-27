@@ -7,13 +7,22 @@ import gzip
 import sys
 import pickle
 
+import torch
+import torch.nn as nn
+from torch.autograd import Variable
+import torch.optim as optim
+import torch.nn.functional as F
+import nltk
+import random
+import numpy as np
+
 import argparse
 import numpy as np
 
-from config import BabiConfigJoint
-from train_test import train, train_linear_start
-from util import parse_babi_task, build_model, build_model_pytorch
-
+from config import BabiConfigJointPytorch
+from train_test_pytorch import train, train_linear_start
+from util import parse_babi_task, DataType
+from util_pytorch import build_model_pytorch
 
 class MemN2N(object):
     """
@@ -32,21 +41,19 @@ class MemN2N(object):
         ###########################
 
     def save_model(self):
-        """ original
         with gzip.open(self.model_file, "wb") as f:
             print("Saving model to file %s ..." % self.model_file)
             pickle.dump((self.reversed_dict, self.memory, self.model, self.loss, self.general_config), f)
-        """
+
 
     def load_model(self):
-        """ original
         # Check if model was loaded
         if self.reversed_dict is None or self.memory is None or \
                 self.model is None or self.loss is None or self.general_config is None:
             print("Loading model from file %s ..." % self.model_file)
             with gzip.open(self.model_file, "rb") as f:
                 self.reversed_dict, self.memory, self.model, self.loss, self.general_config = pickle.load(f)
-        """
+
 
     def train(self):
         """
@@ -72,7 +79,8 @@ class MemN2N(object):
         # Parse training data
         train_data_path = glob.glob(train_data_arg)
         dictionary = {"nil": 0}
-        train_story, train_questions, train_qstory = parse_babi_task(train_data_path, dictionary, False)
+        train_story, train_questions, train_qstory = \
+            parse_babi_task(train_data_path, dictionary, False, dt=DataType.PYTORCH)
 
         # Parse test data just to expand the dictionary so that it covers all words in the test data too
         test_data_path = glob.glob(test_data_arg)
@@ -82,16 +90,17 @@ class MemN2N(object):
         self.reversed_dict = dict((ix, w) for w, ix in dictionary.items())
 
         # Construct model
-        self.general_config = BabiConfigJoint(train_story, train_questions, dictionary)
-        self.memory, self.model, self.loss = build_model(self.general_config)
+        self.general_config = BabiConfigJointPytorch(train_story, train_questions, dictionary)
+        # self.memory, self.model, self.loss = build_model(self.general_config)
+        self.memory, self.model, self.loss = build_model_pytorch(self.general_config)
 
         # Train model
-        if self.general_config.linear_start:
-            train_linear_start(train_story, train_questions, train_qstory,
-                               self.memory, self.model, self.loss, self.general_config)
-        else:
-            train(train_story, train_questions, train_qstory,
-                  self.memory, self.model, self.loss, self.general_config)
+        # if self.general_config.linear_start:
+        #     train_linear_start(train_story, train_questions, train_qstory,
+        #                        self.memory, self.model, self.loss, self.general_config)
+        # else:
+        #     train(train_story, train_questions, train_qstory,
+        #           self.memory, self.model, self.loss, self.general_config)
 
         # Save model
         self.save_model()
@@ -192,10 +201,9 @@ class MemN2N(object):
 
 
 def train_model(data_dir, model_file):
-    """ original
     memn2n = MemN2N(data_dir, model_file)
     memn2n.train()
-    """
+
 
 
 

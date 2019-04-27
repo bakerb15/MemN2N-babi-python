@@ -11,7 +11,7 @@ import nltk
 from copy import deepcopy
 
 
-from memn2n_pytorch.nn import ElemMultPytorch, SumPytorch, MatVecProdPytorch
+from memn2n_pytorch.nn import ElemMultPytorch, SumPytorch, MatVecProdPytorch, Identity, FloatToInt, Parallel
 
 
 class Memory(nn.Module):
@@ -28,6 +28,7 @@ class Memory(nn.Module):
         self.voc_sz = train_config["voc_sz"]
         self.in_dim = train_config["in_dim"]
         self.out_dim = train_config["out_dim"]
+        self.ltype = train_config["LongTensor"]
 
         # TODO: Mark self.nil_word and self.data as None since they will be overriden eventually
         # In build.model.py, memory[i].nil_word = dictionary['nil']"
@@ -157,7 +158,8 @@ class MemoryL(Memory):
 
     def __init__(self, train_config):
         super(MemoryL, self).__init__(train_config)
-        self.data = np.zeros((train_config["max_words"], self.sz, train_config["bsz"]), np.float32)
+        #self.data = np.zeros((train_config["max_words"], self.sz, train_config["bsz"]), np.float32)
+        self.data = train_config["FloatTensor"](torch.zeros((train_config["max_words"], self.sz, train_config["bsz"]), dtype=torch.float32))
 
     def init_query_module(self):
 
@@ -180,13 +182,18 @@ class MemoryL(Memory):
 
         self.emb_query = nn.Embedding(self.voc_sz, self.in_dim)
         emb_query_layers = [
+            FloatToInt(self.ltype),
             self.emb_query,
             ElemMultPytorch(self.config["weight"]),
             SumPytorch(dim=1)]
         s = nn.Sequential(*emb_query_layers)
 
+        p = Parallel()
+        p.add(s)
+        p.add(Identity())
+
         mod_query_layers = [
-            s,
+            p,
             MatVecProdPytorch(True),
             nn.Softmax()]
         self.mod_query = nn.Sequential(*mod_query_layers)
@@ -212,14 +219,19 @@ class MemoryL(Memory):
         self.mod_out.add(MatVecProd(False))
         """
 
-        self.emb_query = nn.Embedding(self.voc_sz, self.in_dim)
+        self.emb_out = nn.Embedding(self.voc_sz, self.out_dim)
         emb_query_layers = [
-            self.emb_query,
+            FloatToInt(self.ltype),
+            self.emb_out,
             ElemMultPytorch(self.config["weight"]),
             SumPytorch(dim=1)]
         s = nn.Sequential(*emb_query_layers)
 
+        p = Parallel()
+        p.add(s)
+        p.add(Identity())
+
         mod_query_layers = [
-            s,
+            p,
             MatVecProdPytorch(False)]
-        self.mod_query = nn.Sequential(*mod_query_layers)
+        self.mod_out = nn.Sequential(*mod_query_layers)
