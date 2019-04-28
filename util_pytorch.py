@@ -95,16 +95,16 @@ def build_model_pytorch(general_config, USE_CUDA=False):
         memory[i].nil_word = dictionary['nil']
         mlayers.append(ptDuplicate())# model.add(Duplicate())
 
-        p = Parallel()
-        p.add(memory[i])
-
+        leftlayer = [memory[i]] # p.add(memory[i])
+        rightlayer = []
         if add_proj:
             #proj[i] = nn.Linear(in_dim, in_dim, bias=False) #LinearNB(in_dim, in_dim)
             proj[i] = LinearNB(in_dim, in_dim)
-            p.add(proj[i])
+            rightlayer.append(proj[i])  # p.add(proj[i])
         else:
-            p.add(ptIdentity())
+            rightlayer.append(ptIdentity())  # p.add(ptIdentity())
 
+        p = Parallel(leftlayer, rightlayer)
         mlayers.append(p)
         mlayers.append(ptAddTable()) #model.add(AddTable())
         if add_nonlin:

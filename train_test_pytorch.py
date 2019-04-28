@@ -42,6 +42,7 @@ def train(train_story, train_questions, train_qstory, memory, model, loss_functi
     }
 
     optimizer = optim.Adam(model.parameters(), lr=params["lrate"])
+
     for ep in range(nepochs):
         # Decrease learning rate after every decay step
         if (ep + 1) % lrate_decay_step == 0:
@@ -61,7 +62,8 @@ def train(train_story, train_questions, train_qstory, memory, model, loss_functi
             # target_data = train_questions[2, batch]                                # indices of training answers
             target_data = Variable(train_questions[2, batch])
 
-            memory[0].data[:] = dictionary["nil"]
+            with torch.no_grad():
+                memory[0].data[:] = dictionary["nil"]
 
             # Compose batch of training data
             for b in range(batch_size):
@@ -77,7 +79,8 @@ def train(train_story, train_questions, train_qstory, memory, model, loss_functi
                 d = d[:, offset:]
 
                 # Training data for the 1st memory cell
-                memory[0].data[:d.shape[0], :d.shape[1], b] = d
+                with torch.no_grad():
+                    memory[0].data[:d.shape[0], :d.shape[1], b] = d
 
                 if enable_time:
                     # Inject noise into time index (i.e. word index)
@@ -90,7 +93,8 @@ def train(train_story, train_questions, train_qstory, memory, model, loss_functi
 
                         # Add random time (must be > dictionary's length) into the time word (decreasing order)
                         nparray = np.sort(rt[:d.shape[1]])[::-1] + len(dictionary, )
-                        memory[0].data[-1, :d.shape[1], b] = torch.from_numpy(nparray)
+                        with torch.no_grad():
+                            memory[0].data[-1, :d.shape[1], b] = torch.from_numpy(nparray)
 
                     else:
                         '''
@@ -102,8 +106,8 @@ def train(train_story, train_questions, train_qstory, memory, model, loss_functi
                 input_data[:, b] = train_qstory[:, batch[b]]
 
             for i in range(1, nhops):
-                memory[i].data = memory[0].data
-
+                with torch.no_grad():
+                    memory[i].data = memory[0].data
 
             model.zero_grad()
             out = model(input_data)
@@ -196,7 +200,7 @@ def train_linear_start(train_story, train_questions, train_qstory, memory, model
 
     # Add softmax back
     for i in range(general_config.nhops):
-        memory[i].mod_query.add(Softmax())
+        memory[i].mod_query = torch.nn.Sequential(*(list(memory[i].mod_query.children()) + [nn.Softmax()])) # memory[i].mod_query.add(Softmax())
 
     # Restore old settings
     general_config.nepochs          = nepochs2

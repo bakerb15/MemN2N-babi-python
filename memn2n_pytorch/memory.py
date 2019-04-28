@@ -186,11 +186,9 @@ class MemoryL(Memory):
             self.emb_query,
             ElemMultPytorch(self.config["weight"]),
             SumPytorch(dim=1)]
-        s = nn.Sequential(*emb_query_layers)
+        # s = nn.Sequential(*emb_query_layers)
 
-        p = Parallel()
-        p.add(s)
-        p.add(Identity())
+        p = Parallel(emb_query_layers, [Identity()])
 
         mod_query_layers = [
             p,
@@ -225,11 +223,9 @@ class MemoryL(Memory):
             self.emb_out,
             ElemMultPytorch(self.config["weight"]),
             SumPytorch(dim=1)]
-        s = nn.Sequential(*emb_query_layers)
+        # s = nn.Sequential(*emb_query_layers)
 
-        p = Parallel()
-        p.add(s)
-        p.add(Identity())
+        p = Parallel(emb_query_layers, [Identity()])
 
         mod_query_layers = [
             p,

@@ -40,9 +40,9 @@ class ElemMultPytorch(nn.Module):
             output = input_data.view(dim0, dim1, dim2) * self.weight[:, :, None]  # broadcasting
         elif len(input_data.shape) == 4:
             #output = input_data.view(50, 11, -1, -1) * self.weight[:, :, None, None]  # broadcasting
-            dim0 = input_data.shape[1]
+            dim0 = input_data.shape[3]
             dim1 = input_data.shape[0]
-            dim2 = input_data.shape[3]
+            dim2 = input_data.shape[1]
             dim3 = -1
             output = input_data.view(dim0, dim1, dim2, dim3) * self.weight[:, :, None, None]  # broadcasting
         else:
@@ -127,16 +127,13 @@ class Parallel(nn.Module):
     """
     Computes forward and backward propagations for all modules at once.
     """
-    def __init__(self):
+    def __init__(self, layers1, layers2):
         super(Parallel, self).__init__()
-        self.mds = []
-
-    def add(self, pytorch_module):
-        self.mds.append(pytorch_module)
+        self.left = nn.Sequential(*layers1)
+        self.right = nn.Sequential(*layers2)
 
     def forward(self, input_data):
-        output = [md.forward(input_elem)
-                       for md, input_elem in zip(self.mds, input_data)]
+        output = [self.left.forward(input_data[0]), self.right.forward(input_data[1])]
         return output
 
 

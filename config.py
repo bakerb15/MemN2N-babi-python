@@ -96,7 +96,8 @@ class BabiConfigJoint(object):
         self.add_nonlin     = False  # add non-linearity to internal states
 
         if self.linear_start:
-            self.ls_nepochs          = 30  # XXX:
+            #self.ls_nepochs          = 30  # XXX:
+            self.ls_nepochs = 1  # XXX:
             self.ls_lrate_decay_step = 31  # XXX:
             self.ls_init_lrate       = 0.01 / 2
 
@@ -156,7 +157,8 @@ class BabiConfigJointPytorch(object):
         self.add_nonlin     = False  # add non-linearity to internal states
 
         if self.linear_start:
-            self.ls_nepochs          = 30  # XXX:
+            #self.ls_nepochs          = 30  # XXX:
+            self.ls_nepochs = 1  # XXX:
             self.ls_lrate_decay_step = 31  # XXX:
             self.ls_init_lrate       = 0.01 / 2
 
