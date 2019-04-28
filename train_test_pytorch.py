@@ -41,10 +41,11 @@ def train(train_story, train_questions, train_qstory, memory, model, loss_functi
         "max_grad_norm": train_config["max_grad_norm"]
     }
 
+    #optimizer = optim.Adam(model.parameters(), lr=params["lrate"])
     optimizer = optim.Adam(model.parameters(), lr=params["lrate"])
-
     for ep in range(nepochs):
         # Decrease learning rate after every decay step
+
         if (ep + 1) % lrate_decay_step == 0:
             params["lrate"] *= 0.5
             for param_group in optimizer.param_groups:
@@ -57,9 +58,10 @@ def train(train_story, train_questions, train_qstory, memory, model, loss_functi
             # Question batch
             # batch = train_range[np.random.randint(train_len, size=batch_size)]
             batch = train_range[torch.randint(train_len, size=(batch_size,))]
-            # input_data  = np.zeros((train_story.shape[0], batch_size), np.float32) # words of training questions
+            #batch = train_range
+            #input_data  = np.zeros((train_story.shape[0], batch_size), np.float32) # words of training questions
             input_data = Variable(torch.zeros((train_story.shape[0], batch_size), dtype=torch.float32))
-            # target_data = train_questions[2, batch]                                # indices of training answers
+            #target_data = train_questions[2, batch]                                # indices of training answers
             target_data = Variable(train_questions[2, batch])
 
             with torch.no_grad():
@@ -110,6 +112,10 @@ def train(train_story, train_questions, train_qstory, memory, model, loss_functi
                     memory[i].data = memory[0].data
 
             model.zero_grad()
+            for i in memory:
+                memory[i].zero_grad()
+                memory[i].mod_out.zero_grad()
+                memory[i].mod_query.zero_grad()
             out = model(input_data)
             loss = loss_function(out.view(out.shape[1], -1), target_data)
             total_cost += loss.item()
@@ -118,7 +124,11 @@ def train(train_story, train_questions, train_qstory, memory, model, loss_functi
             total_num += batch_size
 
             loss.backward()
-            torch.nn.utils.clip_grad_norm(model.parameters(), params["max_grad_norm"])
+            torch.nn.utils.clip_grad_norm_(model.parameters(), params["max_grad_norm"], norm_type=2)
+            for i in memory:
+                torch.nn.utils.clip_grad_norm_(memory[i].parameters(), params["max_grad_norm"], norm_type=2)
+                torch.nn.utils.clip_grad_norm_(memory[i].mod_out.parameters(), params["max_grad_norm"], norm_type=2)
+                torch.nn.utils.clip_grad_norm_(memory[i].mod_query.parameters(), params["max_grad_norm"], norm_type=2)
             optimizer.step()
 
 

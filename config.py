@@ -72,7 +72,7 @@ class BabiConfigJoint(object):
 
         # TODO: Inherit from BabiConfig
         self.dictionary       = dictionary
-        self.batch_size       = 32
+        self.batch_size       = 32 # was 32
         self.nhops            = 3
         self.nepochs          = 60
 
@@ -97,7 +97,7 @@ class BabiConfigJoint(object):
 
         if self.linear_start:
             #self.ls_nepochs          = 30  # XXX:
-            self.ls_nepochs = 1  # XXX:
+            self.ls_nepochs = 20  # XXX:
             self.ls_lrate_decay_step = 31  # XXX:
             self.ls_init_lrate       = 0.01 / 2
 
@@ -132,7 +132,7 @@ class BabiConfigJointPytorch(object):
 
         # TODO: Inherit from BabiConfig
         self.dictionary       = dictionary
-        self.batch_size       = 32
+        self.batch_size       = 32 #was 32
         self.nhops            = 3
         self.nepochs          = 60
 
@@ -158,7 +158,7 @@ class BabiConfigJointPytorch(object):
 
         if self.linear_start:
             #self.ls_nepochs          = 30  # XXX:
-            self.ls_nepochs = 1  # XXX:
+            self.ls_nepochs = 20  # XXX:
             self.ls_lrate_decay_step = 31  # XXX:
             self.ls_init_lrate       = 0.01 / 2
 

@@ -24,6 +24,9 @@ from train_test_pytorch import train, train_linear_start
 from util import parse_babi_task, DataType
 from util_pytorch import build_model_pytorch
 
+from memn2n_pytorch.nn import ElemMultPytorch
+from memn2n_pytorch.memory import Memory
+
 class MemN2N(object):
     """
     MemN2N class
@@ -93,6 +96,7 @@ class MemN2N(object):
         self.general_config = BabiConfigJointPytorch(train_story, train_questions, dictionary)
         # self.memory, self.model, self.loss = build_model(self.general_config)
         self.memory, self.model, self.loss = build_model_pytorch(self.general_config)
+        self.init_weights()
 
         # Train model
         if self.general_config.linear_start:
@@ -104,6 +108,31 @@ class MemN2N(object):
 
         # Save model
         self.save_model()
+
+    def init_weights(self):
+        """
+        The original model used 0.1 * np.random.standard_normal(sz) to initialize Weight objects
+        :return: None
+        """
+        standdev = 0.089
+        for mdl in self.model.modules():
+            if mdl is type(Memory):
+                print('here')
+            if isinstance(mdl, nn.Embedding):
+                #torch.nn.init.xavier_uniform(mdl.weight)
+                torch.nn.init.normal_(mdl.weight, std=standdev)
+                #with torch.no_grad():
+                #    mdl.weight = nn.Parameter(torch.from_numpy(0.1 * np.random.standard_normal(mdl.weight.shape)).type(torch.FloatTensor))
+            elif isinstance(mdl, nn.Linear):
+                torch.nn.init.normal_(mdl.weight, std=standdev)
+                #with torch.no_grad():
+                    #dl.weight = nn.Parameter(torch.from_numpy(0.1 * np.random.standard_normal(mdl.weight.shape)).type(torch.FloatTensor))
+            elif isinstance(mdl, nn.Module) and not isinstance(mdl, ElemMultPytorch):
+                if hasattr(mdl, 'weight'):
+                    torch.nn.init.normal_(mdl.weight, std=standdev)
+
+        for i in self.memory:
+            self.memory[i].init_weights()
 
     def get_story_texts(self, test_story, test_questions, test_qstory,
                         question_idx, story_idx, last_sentence_idx):

@@ -73,7 +73,7 @@ def build_model_pytorch(general_config, USE_CUDA=False):
     """
 
     memory = {}
-    modle_emb = nn.Embedding(voc_sz, in_dim)
+    modle_emb = nn.Embedding(voc_sz, in_dim, sparse=True)
     mlayers = [FloatToInt(train_config["LongTensor"]), modle_emb]
     if not use_bow:
         if enable_time:

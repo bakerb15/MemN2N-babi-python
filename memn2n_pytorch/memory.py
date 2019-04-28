@@ -73,6 +73,36 @@ class Memory(nn.Module):
         """
         pass
 
+    def init_weights(self):
+        """
+        The original model used 0.1 * np.random.standard_normal(sz) to initialize Weight objects
+        :return: None
+        """
+        standdev = 0.089
+        for mdl in self.mod_query.modules():
+            if isinstance(mdl, nn.Embedding):
+                torch.nn.init.normal_(mdl.weight, std=standdev)
+                #torch.nn.init.xavier_uniform(mdl.weight)
+            elif isinstance(mdl, nn.Linear):
+                torch.nn.init.normal_(mdl.weight, std=standdev)
+            elif isinstance(mdl, nn.Module) and not isinstance(mdl, ElemMultPytorch):
+                if hasattr(mdl, 'weight'):
+                    torch.nn.init.normal_(mdl.weight, std=standdev)
+
+        for mdl in self.mod_out.modules():
+            if isinstance(mdl, nn.Embedding):
+                torch.nn.init.normal_(mdl.weight, std=standdev)
+                #torch.nn.init.xavier_uniform(mdl.weight)
+                # with torch.no_grad():
+                #    mdl.weight = nn.Parameter(torch.from_numpy(0.1 * np.random.standard_normal(mdl.weight.shape)).type(torch.FloatTensor))
+            elif isinstance(mdl, nn.Linear):
+                torch.nn.init.normal_(mdl.weight, std=standdev)
+                # with torch.no_grad():
+                # dl.weight = nn.Parameter(torch.from_numpy(0.1 * np.random.standard_normal(mdl.weight.shape)).type(torch.FloatTensor))
+            elif isinstance(mdl, nn.Module) and not isinstance(mdl, ElemMultPytorch):
+                if hasattr(mdl, 'weight'):
+                    torch.nn.init.normal_(mdl.weight, std=standdev)
+
     def reset(self):
         self.data[:] = self.nil_word
 
@@ -180,7 +210,7 @@ class MemoryL(Memory):
         self.mod_query.add(Softmax())
         """
 
-        self.emb_query = nn.Embedding(self.voc_sz, self.in_dim)
+        self.emb_query = nn.Embedding(self.voc_sz, self.in_dim, sparse=True)
         emb_query_layers = [
             FloatToInt(self.ltype),
             self.emb_query,
@@ -217,7 +247,7 @@ class MemoryL(Memory):
         self.mod_out.add(MatVecProd(False))
         """
 
-        self.emb_out = nn.Embedding(self.voc_sz, self.out_dim)
+        self.emb_out = nn.Embedding(self.voc_sz, self.out_dim, sparse=True)
         emb_query_layers = [
             FloatToInt(self.ltype),
             self.emb_out,

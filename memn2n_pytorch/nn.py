@@ -28,18 +28,17 @@ class ElemMultPytorch(nn.Module):
         self.weight = nn.Parameter(weight)
 
     def forward(self, input_data):
-        # assuming x is of size b-1-h-w
-
+        #inp = input_data.data.numpy()
         if len(input_data.shape) == 2:
             output = input_data.view(50, 11,) * self.weight
         elif len(input_data.shape) == 3:
-            #output = input_data.view(50, 11, -1) * self.weight[:, :, None]  #
+
             dim0 =  input_data.shape[2]
             dim1 =  input_data.shape[0]
             dim2 = -1
             output = input_data.view(dim0, dim1, dim2) * self.weight[:, :, None]  # broadcasting
         elif len(input_data.shape) == 4:
-            #output = input_data.view(50, 11, -1, -1) * self.weight[:, :, None, None]  # broadcasting
+
             dim0 = input_data.shape[3]
             dim1 = input_data.shape[0]
             dim2 = input_data.shape[1]
@@ -49,13 +48,36 @@ class ElemMultPytorch(nn.Module):
             raise Exception("input_data has large dimension = %d" % input_data.ndim)
         return output
 
+
+    '''
+    def forward(self, input_data):
+        # TODO: Rewrite these checkings!!!
+        inp = input_data.data.numpy()
+        inp = inp.reshape(50, 6, 4)
+        w = self.weight.data.numpy()
+
+
+        if input_data.ndim == 2:
+            output = input_data * w
+        elif input_data.ndim == 3:
+            output = input_data * w[:, :, None]  # broadcasting
+        elif input_data.ndim == 4:
+            output = input_data * w[:, :, None, None]  # broadcasting
+        else:
+            raise Exception("input_data has large dimension = %d" % input_data.ndim)
+        return  torch.from_numpy(output)
+    '''
+
 class SumPytorch(nn.Module):
     def __init__(self, dim):
         super(SumPytorch, self).__init__()
         self.dim = dim
 
     def forward(self, input_data):
-        return torch.sum(input_data, dim=self.dim)
+        #output = torch.sum(input_data, dim=self.dim)
+        ind = input_data.data.numpy()
+        output = torch.from_numpy(np.squeeze(np.sum(ind, axis=self.dim)))
+        return output
 
 
 class MatVecProdPytorch(nn.Module):
@@ -69,6 +91,7 @@ class MatVecProdPytorch(nn.Module):
         super(MatVecProdPytorch, self).__init__()
         self.do_transpose = do_transpose
 
+    '''
     def forward(self, input_data):
         M = input_data[0]
         V = input_data[1]
@@ -78,14 +101,39 @@ class MatVecProdPytorch(nn.Module):
         if self.do_transpose:
             output = torch.zeros((M.shape[1], batch_size)).type(M.dtype)
             for i in range(batch_size):
-                output[:, i] = torch.matmul(M[:, :, i].t(), V[:, i])
+                output[:, i] = torch.dot(M[:, :, i].t(), V[:, i])
         else:
             output = torch.zeros((M.shape[0], batch_size)).type(M.dtype)
             for i in range(batch_size):
-                output[:, i] = torch.matmul(M[:, :, i], V[:, i])
+                output[:, i] = torch.dot(M[:, :, i], V[:, i])
 
+        numpymat = output.data.numpy()
         return output
+    '''
 
+
+    def forward(self, input_data):
+        M = input_data[0].data.numpy()
+        V = input_data[1].data.numpy()
+
+        # Expand M to 3-dimension and V to 2-dimension
+        if M.ndim == 2:
+            M = np.expand_dims(M, axis=2)
+        if V.ndim == 1:
+            V = np.expand_dims(V, axis=1)
+
+        batch_size = M.shape[2]
+
+        if self.do_transpose:
+            output = np.zeros((M.shape[1], batch_size), np.float32)
+            for i in range(batch_size):
+                output[:, i] = np.dot(M[:, :, i].T, V[:, i])
+        else:
+            output = np.zeros((M.shape[0], batch_size), np.float32)
+            for i in range(batch_size):
+                output[:, i] = np.dot(M[:, :, i], V[:, i])
+        torchout = torch.from_numpy(output).type(input_data[0].dtype)
+        return torchout
 
 class Duplicate(nn.Module):
 
@@ -137,8 +185,6 @@ class Parallel(nn.Module):
         return output
 
 
-
-
 class FloatToInt(nn.Module):
 
     def __init__(self, ltype):
@@ -167,6 +213,7 @@ class LinearNB(nn.Module):
             lin_mod = nn.Linear(out_dim, in_dim, bias=False)
 
         self.m = lin_mod
+
 
     def forward(self, input_data):
         high_dimension_input = len(input_data.shape) > 2
