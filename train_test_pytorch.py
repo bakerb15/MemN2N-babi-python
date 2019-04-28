@@ -157,14 +157,6 @@ def train(train_story, train_questions, train_qstory, memory, model, loss_functi
             for i in range(1, nhops):
                 memory[i].data = memory[0].data
 
-            # original model
-            """ original model
-            out = model.fprop(input_data)
-            total_val_cost += loss.fprop(out, target_data)
-            total_val_err  += loss.get_error(out, target_data)
-            total_val_num  += batch_size
-            """
-
             out = model(input_data)
             loss = loss_function(out.view(out.shape[1], -1), target_data)
             total_val_cost += loss.item()
@@ -175,8 +167,8 @@ def train(train_story, train_questions, train_qstory, memory, model, loss_functi
             total_val_num += batch_size
 
 
-        train_error = total_err / total_num
-        val_error   = total_val_err / total_val_num
+        train_error = total_err.float() / total_num
+        val_error   = total_val_err.float() / total_val_num
 
         print("%d | train error: %g | val error: %g" % (ep + 1, train_error, val_error))
 
