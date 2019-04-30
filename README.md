@@ -11,7 +11,7 @@ the data directory is expected to have a train and test directory. if the -d2 op
 
 
 
-# Start Original:
+# Original Readme:
 ## End-To-End Memory Networks for Question Answering
 This is an implementation of MemN2N model in Python for the [bAbI question-answering tasks](http://fb.ai/babi) 
 as shown in the Section 4 of the paper "[End-To-End Memory Networks](http://arxiv.org/abs/1503.08895)". It is based on 
