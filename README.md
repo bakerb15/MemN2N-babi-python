@@ -5,11 +5,13 @@ The original model was converted to python3 and ported to pytorch. Unable to obt
 
 # Can train by calling:
 
-python3 demo_pytorch.qa_pytorch -train -d2 /home/bbaker/nlp-final-project/bAbI/data/dev
+python3 demo_pytorch.qa_pytorch -train -d2 [path to data]
+
+the data directory is expected to have a train and test directory. if the -d2 option is ommited the program will look for the data in ./data. For more details read below.
 
 
 
-
+# Start Original:
 ## End-To-End Memory Networks for Question Answering
 This is an implementation of MemN2N model in Python for the [bAbI question-answering tasks](http://fb.ai/babi) 
 as shown in the Section 4 of the paper "[End-To-End Memory Networks](http://arxiv.org/abs/1503.08895)". It is based on 
