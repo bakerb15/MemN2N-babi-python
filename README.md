@@ -1,5 +1,5 @@
 
-# #The oringal model was forked from: vinhkhuc/MemN2N-babi-python
+# The original model was forked from: vinhkhuc/MemN2N-babi-python
 
 The original model was converted to python3 and ported to pytorch. Unable to obtain performance of original model. Something wrong with pytorch code
 
