@@ -24,7 +24,7 @@ from train_test_pytorch import train, train_linear_start
 from util import parse_babi_task, DataType
 from util_pytorch import build_model_pytorch
 
-from memn2n_pytorch.nn import ElemMultPytorch
+from memn2n_pytorch.nn import ElemMultPytorch, LookupTable
 from memn2n_pytorch.memory import Memory
 
 class MemN2N(object):
@@ -114,7 +114,7 @@ class MemN2N(object):
         The original model used 0.1 * np.random.standard_normal(sz) to initialize Weight objects
         :return: None
         """
-        standdev = 0.089
+        standdev = 0.1
         for mdl in self.model.modules():
             if mdl is type(Memory):
                 print('here')
@@ -127,9 +127,11 @@ class MemN2N(object):
                 torch.nn.init.normal_(mdl.weight, std=standdev)
                 #with torch.no_grad():
                     #dl.weight = nn.Parameter(torch.from_numpy(0.1 * np.random.standard_normal(mdl.weight.shape)).type(torch.FloatTensor))
-            elif isinstance(mdl, nn.Module) and not isinstance(mdl, ElemMultPytorch):
+            elif isinstance(mdl, nn.Module) and not isinstance(mdl, ElemMultPytorch) and not isinstance(mdl, LookupTable):
                 if hasattr(mdl, 'weight'):
                     torch.nn.init.normal_(mdl.weight, std=standdev)
+            else:
+                pass
 
         for i in self.memory:
             self.memory[i].init_weights()

@@ -29,6 +29,7 @@ class ElemMultPytorch(nn.Module):
 
     def forward(self, input_data):
         #inp = input_data.data.numpy()
+        """
         if len(input_data.shape) == 2:
             output = input_data.view(50, 11,) * self.weight
         elif len(input_data.shape) == 3:
@@ -46,6 +47,26 @@ class ElemMultPytorch(nn.Module):
             output = input_data.view(dim0, dim1, dim2, dim3) * self.weight[:, :, None, None]  # broadcasting
         else:
             raise Exception("input_data has large dimension = %d" % input_data.ndim)
+        return output
+        """
+        if len(input_data.shape) == 2:
+            output = input_data * self.weight
+        elif len(input_data.shape) == 3:
+            #dim0 = input_data.shape[2]
+            #dim1 = input_data.shape[0]
+            #dim2 = -1
+            #output = input_data.view(dim0, dim1, dim2) * self.weight[:, :, None]  # broadcasting
+            output = input_data * self.weight[:, :, None]
+        elif len(input_data.shape) == 4:
+            #dim0 = input_data.shape[3]
+            #dim1 = input_data.shape[0]
+            #dim2 = input_data.shape[1]
+            #dim3 = -1
+            #output = input_data.view(dim0, dim1, dim2, dim3) * self.weight[:, :, None, None]  # broadcasting
+            output = input_data * self.weight[:, :, None, None]
+        else:
+            raise Exception("input_data has large dimension = %d" % input_data.ndim)
+        n = output.data.numpy()
         return output
 
 
@@ -76,7 +97,8 @@ class SumPytorch(nn.Module):
     def forward(self, input_data):
         #output = torch.sum(input_data, dim=self.dim)
         ind = input_data.data.numpy()
-        output = torch.from_numpy(np.squeeze(np.sum(ind, axis=self.dim)))
+        n = np.squeeze(np.sum(ind, axis=self.dim))
+        output = torch.from_numpy(n)
         return output
 
 
@@ -158,7 +180,7 @@ class AddTable(nn.Module):
     """
     def __init__(self):
         super(AddTable, self).__init__()
-
+    """
     def forward(self, input_data):
         #return input_data.sum(0)
         output = input_data[0]
@@ -169,6 +191,17 @@ class AddTable(nn.Module):
                 elem = elem.expand(output.shape[0], output.shape[1], output.shape[2])
             output += elem
         return output
+    """
+    def forward(self, input_data):
+        output = input_data[0].data.numpy()
+        for elem in input_data[1:]:
+            elem = elem.data.numpy()
+            # Expand to the same ndim as self.output
+            # TODO: Code improvement
+            if elem.ndim == output.ndim - 1:
+                elem = np.expand_dims(elem, axis=elem.ndim + 1)
+            output += elem
+        return torch.from_numpy(output)
 
 
 class Parallel(nn.Module):
@@ -230,3 +263,31 @@ class LinearNB(nn.Module):
             output = output.view(self.output.shape[0], -1)
 
         return output
+
+
+class LookupTable(nn.Module):
+    """
+    Lookup table
+    """
+    def __init__(self, voc_sz, out_dim):
+        """
+        Constructor
+
+        Args:
+            voc_sz (int): vocabulary size
+            out_dim (int): output dimension
+        """
+        super(LookupTable, self).__init__()
+        self.sz      = voc_sz
+        self.out_dim = out_dim
+        sz = (out_dim, voc_sz)
+        w = 0.1 * np.random.standard_normal(sz)
+        w = torch.from_numpy(w)
+        self.weight = nn.Parameter(w)  # self.weight  = Weight((out_dim, voc_sz))
+
+    def forward(self, input_data):
+        lookup = torch.from_numpy(input_data.data.numpy().T.astype(np.int).flatten())
+        output = self.weight[:, lookup]
+        # Matlab's reshape uses Fortran order (i.e. column first)
+        output = np.squeeze(output.data.numpy().reshape((self.out_dim,) + input_data.data.numpy().shape, order='F'))
+        return torch.from_numpy(output).type(torch.FloatTensor)

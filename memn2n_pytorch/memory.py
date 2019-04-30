@@ -11,7 +11,7 @@ import nltk
 from copy import deepcopy
 
 
-from memn2n_pytorch.nn import ElemMultPytorch, SumPytorch, MatVecProdPytorch, Identity, FloatToInt, Parallel
+from memn2n_pytorch.nn import ElemMultPytorch, SumPytorch, MatVecProdPytorch, Identity, FloatToInt, Parallel, LookupTable
 
 
 class Memory(nn.Module):
@@ -45,6 +45,7 @@ class Memory(nn.Module):
 
         self.init_query_module()
         self.init_output_module()
+
 
     def init_query_module(self):
         """
@@ -85,9 +86,10 @@ class Memory(nn.Module):
                 #torch.nn.init.xavier_uniform(mdl.weight)
             elif isinstance(mdl, nn.Linear):
                 torch.nn.init.normal_(mdl.weight, std=standdev)
-            elif isinstance(mdl, nn.Module) and not isinstance(mdl, ElemMultPytorch):
+            elif isinstance(mdl, nn.Module) and not isinstance(mdl, ElemMultPytorch) and not isinstance(mdl, LookupTable):
                 if hasattr(mdl, 'weight'):
                     torch.nn.init.normal_(mdl.weight, std=standdev)
+
 
         for mdl in self.mod_out.modules():
             if isinstance(mdl, nn.Embedding):
@@ -99,7 +101,7 @@ class Memory(nn.Module):
                 torch.nn.init.normal_(mdl.weight, std=standdev)
                 # with torch.no_grad():
                 # dl.weight = nn.Parameter(torch.from_numpy(0.1 * np.random.standard_normal(mdl.weight.shape)).type(torch.FloatTensor))
-            elif isinstance(mdl, nn.Module) and not isinstance(mdl, ElemMultPytorch):
+            elif isinstance(mdl, nn.Module) and not isinstance(mdl, ElemMultPytorch) and not isinstance(mdl, LookupTable):
                 if hasattr(mdl, 'weight'):
                     torch.nn.init.normal_(mdl.weight, std=standdev)
 
@@ -210,7 +212,8 @@ class MemoryL(Memory):
         self.mod_query.add(Softmax())
         """
 
-        self.emb_query = nn.Embedding(self.voc_sz, self.in_dim, sparse=True)
+        #self.emb_query = nn.Embedding(self.voc_sz, self.in_dim, sparse=True)
+        self.emb_query = LookupTable(self.voc_sz, self.out_dim)
         emb_query_layers = [
             FloatToInt(self.ltype),
             self.emb_query,
@@ -247,7 +250,8 @@ class MemoryL(Memory):
         self.mod_out.add(MatVecProd(False))
         """
 
-        self.emb_out = nn.Embedding(self.voc_sz, self.out_dim, sparse=True)
+        #self.emb_out = nn.Embedding(self.voc_sz, self.out_dim, sparse=True)
+        self.emb_out = LookupTable(self.voc_sz, self.out_dim)
         emb_query_layers = [
             FloatToInt(self.ltype),
             self.emb_out,

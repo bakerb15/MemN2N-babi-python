@@ -16,7 +16,7 @@ from memn2n_pytorch.nn import ElemMultPytorch
 from memn2n_pytorch.nn import Duplicate as ptDuplicate
 from memn2n_pytorch.nn import Identity as ptIdentity
 from memn2n_pytorch.nn import AddTable as ptAddTable
-from memn2n_pytorch.nn import FloatToInt, Parallel, LinearNB
+from memn2n_pytorch.nn import FloatToInt, Parallel, LinearNB, LookupTable
 
 
 def build_model_pytorch(general_config, USE_CUDA=False):
@@ -73,7 +73,8 @@ def build_model_pytorch(general_config, USE_CUDA=False):
     """
 
     memory = {}
-    modle_emb = nn.Embedding(voc_sz, in_dim, sparse=True)
+    #modle_emb = nn.Embedding(voc_sz, in_dim, sparse=True)
+    modle_emb = LookupTable(voc_sz, out_dim)
     mlayers = [FloatToInt(train_config["LongTensor"]), modle_emb]
     if not use_bow:
         if enable_time:

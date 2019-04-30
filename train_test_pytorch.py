@@ -42,14 +42,14 @@ def train(train_story, train_questions, train_qstory, memory, model, loss_functi
     }
 
     #optimizer = optim.Adam(model.parameters(), lr=params["lrate"])
-    optimizer = optim.Adam(model.parameters(), lr=params["lrate"])
+    optimizer = optim.SGD(model.parameters(), lr=params["lrate"])
     for ep in range(nepochs):
         # Decrease learning rate after every decay step
 
         if (ep + 1) % lrate_decay_step == 0:
             params["lrate"] *= 0.5
-            for param_group in optimizer.param_groups:
-                param_group['lr'] = params["lrate"]
+            #for param_group in optimizer.param_groups:
+            #    param_group['lr'] = params["lrate"]
 
         total_err  = 0.
         total_cost = 0.
@@ -59,10 +59,14 @@ def train(train_story, train_questions, train_qstory, memory, model, loss_functi
             # batch = train_range[np.random.randint(train_len, size=batch_size)]
             batch = train_range[torch.randint(train_len, size=(batch_size,))]
             #batch = train_range
-            #input_data  = np.zeros((train_story.shape[0], batch_size), np.float32) # words of training questions
+
             input_data = Variable(torch.zeros((train_story.shape[0], batch_size), dtype=torch.float32))
-            #target_data = train_questions[2, batch]                                # indices of training answers
+            input_data.requires_grad = False
+
             target_data = Variable(train_questions[2, batch])
+
+
+
 
             with torch.no_grad():
                 memory[0].data[:] = dictionary["nil"]
@@ -70,19 +74,15 @@ def train(train_story, train_questions, train_qstory, memory, model, loss_functi
             # Compose batch of training data
             for b in range(batch_size):
                 # NOTE: +1 since train_questions[1, :] is the index of the sentence right before the training question.
-                # d is a batch of [word indices in sentence, sentence indices from batch] for this story
-                # XXXf = (1 + train_questions[1, batch[b]])
-                # XXXl = train_questions[0, batch[b]]
-                # d = train_story[XXXf, XXXl]
-                d = train_story[:, :(1 + train_questions[1, batch[b]]), train_questions[0, batch[b]]]
+                d = train_story[:, :(1 + train_questions[1, batch[b]]), train_questions[0, batch[b]]].detach()
 
                 # Pick a fixed number of latest sentences (before the question) from the story
                 offset = max(0, d.shape[1] - train_config["sz"])
-                d = d[:, offset:]
+                d = d[:, offset:].detach()
 
                 # Training data for the 1st memory cell
                 with torch.no_grad():
-                    memory[0].data[:d.shape[0], :d.shape[1], b] = d
+                    memory[0].data[:d.shape[0], :d.shape[1], b] = d.detach()
 
                 if enable_time:
                     # Inject noise into time index (i.e. word index)
@@ -96,7 +96,7 @@ def train(train_story, train_questions, train_qstory, memory, model, loss_functi
                         # Add random time (must be > dictionary's length) into the time word (decreasing order)
                         nparray = np.sort(rt[:d.shape[1]])[::-1] + len(dictionary, )
                         with torch.no_grad():
-                            memory[0].data[-1, :d.shape[1], b] = torch.from_numpy(nparray)
+                            memory[0].data[-1, :d.shape[1], b] = torch.from_numpy(nparray).detach()
 
                     else:
                         '''
@@ -105,17 +105,18 @@ def train(train_story, train_questions, train_qstory, memory, model, loss_functi
                         '''
                         pass
 
-                input_data[:, b] = train_qstory[:, batch[b]]
+                input_data[:, b] = train_qstory[:, batch[b]].detach()
 
             for i in range(1, nhops):
                 with torch.no_grad():
-                    memory[i].data = memory[0].data
-
+                    memory[i].data = memory[0].data.detach()
+            input_data.requires_grad_()
             model.zero_grad()
             for i in memory:
                 memory[i].zero_grad()
                 memory[i].mod_out.zero_grad()
                 memory[i].mod_query.zero_grad()
+            optimizer.zero_grad()
             out = model(input_data)
             loss = loss_function(out.view(out.shape[1], -1), target_data)
             total_cost += loss.item()
@@ -125,13 +126,7 @@ def train(train_story, train_questions, train_qstory, memory, model, loss_functi
 
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), params["max_grad_norm"], norm_type=2)
-            for i in memory:
-                torch.nn.utils.clip_grad_norm_(memory[i].parameters(), params["max_grad_norm"], norm_type=2)
-                torch.nn.utils.clip_grad_norm_(memory[i].mod_out.parameters(), params["max_grad_norm"], norm_type=2)
-                torch.nn.utils.clip_grad_norm_(memory[i].mod_query.parameters(), params["max_grad_norm"], norm_type=2)
             optimizer.step()
-
-
 
             with torch.no_grad():
                 for i in range(nhops):
@@ -142,6 +137,8 @@ def train(train_story, train_questions, train_qstory, memory, model, loss_functi
         total_val_err  = 0.
         total_val_cost = 0.
         total_val_num  = 0
+
+        input_data.requires_grad_()
 
         for k in range(int(math.floor(val_len / batch_size))):
             batch       = val_range[torch.arange(k * batch_size, (k + 1) * batch_size)]  # val_range[np.arange(k * batch_size, (k + 1) * batch_size)]
@@ -223,9 +220,10 @@ def train_linear_start(train_story, train_questions, train_qstory, memory, model
 
 def test(test_story, test_questions, test_qstory, memory, model, loss_function, general_config, USE_CUDA=False):
 
-    FloatTensor = torch.cuda.FloatTensor if USE_CUDA else torch.FloatTensor
-    LongTensor = torch.cuda.LongTensor if USE_CUDA else torch.LongTensor
-    ByteTensor = torch.cuda.ByteTensor if USE_CUDA else torch.ByteTensor
+    test_qstory = test_qstory
+    #FloatTensor = torch.cuda.FloatTensor if USE_CUDA else torch.FloatTensor
+    #LongTensor = torch.cuda.LongTensor if USE_CUDA else torch.LongTensor
+    #ByteTensor = torch.cuda.ByteTensor if USE_CUDA else torch.ByteTensor
 
     total_test_err = 0.
     total_test_num = 0
@@ -244,7 +242,7 @@ def test(test_story, test_questions, test_qstory, memory, model, loss_function, 
         batch = torch.arange(k * batch_size, (k + 1) * batch_size)
 
         # input_data = np.zeros((max_words, batch_size), np.float32)
-        input_data = Variable(torch.zeros((max_words, batch_size), dtype=FloatTensor))
+        input_data = Variable(torch.zeros((max_words, batch_size), dtype=torch.float32))
 
 
         target_data = test_questions[2, batch]
@@ -260,8 +258,15 @@ def test(test_story, test_questions, test_qstory, memory, model, loss_function, 
 
             memory[0].data[:d.shape[0], :d.shape[1], b] = d
 
+            #if enable_time:
+                #memory[0].data[-1, :d.shape[1], b] = torch.from_numpy(np.arange(d.shape[1])[::-1]) + len(dictionary) # time words
+
             if enable_time:
-                memory[0].data[-1, :d.shape[1], b] = np.arange(d.shape[1])[::-1] + len(dictionary) # time words
+                tensor = torch.arange(d.shape[1])
+                idx = [i for i in range(tensor.size(0) - 1, -1, -1)]
+                idx = torch.LongTensor(idx)
+                inverted_tensor = tensor.index_select(0, idx) + len(dictionary)
+                memory[0].data[-1, :d.shape[1], b] = inverted_tensor
 
             input_data[:test_qstory.shape[0], b] = test_qstory[:, batch[b]]
 
@@ -273,6 +278,7 @@ def test(test_story, test_questions, test_qstory, memory, model, loss_function, 
         y = out.max(0)[1]  # y = out.argmax(axis=0)
         total_test_err += torch.sum(y != target_data)  # total_test_err += np.sum(y != target_data)
         total_test_num += batch_size
+
 
     test_error = total_test_err / total_test_num
     print("Test error: %f" % test_error)

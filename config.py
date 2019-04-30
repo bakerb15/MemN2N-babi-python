@@ -133,10 +133,10 @@ class BabiConfigJointPytorch(object):
         # TODO: Inherit from BabiConfig
         self.dictionary       = dictionary
         self.batch_size       = 32 #was 32
-        self.nhops            = 3
+        self.nhops            = 1
         self.nepochs          = 60
 
-        self.lrate_decay_step = 15   # reduce learning rate by half every 25 epochs  # XXX:
+        self.lrate_decay_step = 25   # reduce learning rate by half every 25 epochs  # XXX:
 
         # Use 10% of training data for validation  # XXX
         nb_questions        = train_questions.shape[1]
@@ -168,7 +168,7 @@ class BabiConfigJointPytorch(object):
         ByteTensor = torch.cuda.ByteTensor if USE_CUDA else torch.ByteTensor
         # Training configuration
         self.train_config = {
-            "init_lrate"   : 0.01,
+            "init_lrate"   : 0.01, #0.01,
             "max_grad_norm": 40,
             "in_dim"       : 50,  # XXX:
             "out_dim"      : 50,  # XXX:
