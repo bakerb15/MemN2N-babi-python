@@ -1,9 +1,9 @@
 
-##The oringal model was forked from: vinhkhuc/MemN2N-babi-python
+# #The oringal model was forked from: vinhkhuc/MemN2N-babi-python
 
 The original model was converted to python3 and ported to pytorch. Unable to obtain performance of original model. Something wrong with pytorch code
 
-Can train by calling:
+# Can train by calling:
 
 python3 demo_pytorch.qa_pytorch -train -d2 /home/bbaker/nlp-final-project/bAbI/data/dev
 
