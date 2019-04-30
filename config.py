@@ -132,7 +132,7 @@ class BabiConfigJointPytorch(object):
 
         # TODO: Inherit from BabiConfig
         self.dictionary       = dictionary
-        self.batch_size       = 32 #was 32
+        self.batch_size       = 16 #was 32
         self.nhops            = 1
         self.nepochs          = 60
 
@@ -148,9 +148,9 @@ class BabiConfigJointPytorch(object):
         self.train_range = rp[:nb_train_questions]
         self.val_range   = rp[nb_train_questions:]
 
-        self.enable_time    = True   # add time embeddings
+        self.enable_time    = False   # add time embeddings
         self.use_bow        = False  # use Bag-of-Words instead of Position-Encoding
-        self.linear_start   = True
+        self.linear_start   = False
         self.share_type     = 1      # 1: adjacent, 2: layer-wise weight tying
         self.randomize_time = 0.1    # amount of noise injected into time index
         self.add_proj       = False  # add linear layer between internal states

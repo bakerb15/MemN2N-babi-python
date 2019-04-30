@@ -41,15 +41,15 @@ def train(train_story, train_questions, train_qstory, memory, model, loss_functi
         "max_grad_norm": train_config["max_grad_norm"]
     }
 
-    #optimizer = optim.Adam(model.parameters(), lr=params["lrate"])
+
     optimizer = optim.SGD(model.parameters(), lr=params["lrate"])
     for ep in range(nepochs):
         # Decrease learning rate after every decay step
 
         if (ep + 1) % lrate_decay_step == 0:
             params["lrate"] *= 0.5
-            #for param_group in optimizer.param_groups:
-            #    param_group['lr'] = params["lrate"]
+            for param_group in optimizer.param_groups:
+                param_group['lr'] = params["lrate"]
 
         total_err  = 0.
         total_cost = 0.
@@ -72,45 +72,45 @@ def train(train_story, train_questions, train_qstory, memory, model, loss_functi
                 memory[0].data[:] = dictionary["nil"]
 
             # Compose batch of training data
-            for b in range(batch_size):
-                # NOTE: +1 since train_questions[1, :] is the index of the sentence right before the training question.
-                d = train_story[:, :(1 + train_questions[1, batch[b]]), train_questions[0, batch[b]]].detach()
+            with torch.no_grad():
+                for b in range(batch_size):
+                    # NOTE: +1 since train_questions[1, :] is the index of the sentence right before the training question.
+                    d = train_story[:, :(1 + train_questions[1, batch[b]]), train_questions[0, batch[b]]].detach()
 
-                # Pick a fixed number of latest sentences (before the question) from the story
-                offset = max(0, d.shape[1] - train_config["sz"])
-                d = d[:, offset:].detach()
+                    # Pick a fixed number of latest sentences (before the question) from the story
+                    offset = max(0, d.shape[1] - train_config["sz"])
+                    d = d[:, offset:].detach()
 
-                # Training data for the 1st memory cell
-                with torch.no_grad():
+                    # Training data for the 1st memory cell
+
                     memory[0].data[:d.shape[0], :d.shape[1], b] = d.detach()
 
-                if enable_time:
-                    # Inject noise into time index (i.e. word index)
-                    if randomize_time > 0:
-                        # Random number of blank (must be < total sentences until the training question?)
-                        nblank = np.random.randint(int(math.ceil(d.shape[1] * randomize_time)))
-                        rt = np.random.permutation(d.shape[1] + nblank)
+                    if enable_time:
+                        # Inject noise into time index (i.e. word index)
+                        if randomize_time > 0:
+                            # Random number of blank (must be < total sentences until the training question?)
+                            nblank = np.random.randint(int(math.ceil(d.shape[1] * randomize_time)))
+                            rt = np.random.permutation(d.shape[1] + nblank)
 
-                        rt[rt >= train_config["sz"]] = train_config["sz"] - 1 # put the cap
+                            rt[rt >= train_config["sz"]] = train_config["sz"] - 1 # put the cap
 
-                        # Add random time (must be > dictionary's length) into the time word (decreasing order)
-                        nparray = np.sort(rt[:d.shape[1]])[::-1] + len(dictionary, )
-                        with torch.no_grad():
-                            memory[0].data[-1, :d.shape[1], b] = torch.from_numpy(nparray).detach()
+                            # Add random time (must be > dictionary's length) into the time word (decreasing order)
+                            nparray = np.sort(rt[:d.shape[1]])[::-1] + len(dictionary, )
+                            with torch.no_grad():
+                                memory[0].data[-1, :d.shape[1], b] = torch.from_numpy(nparray).detach()
 
-                    else:
-                        '''
-                        memory[0].data[-1, :d.shape[1], b] = \
-                            np.arange(d.shape[1])[::-1] + len(dictionary)
-                        '''
-                        pass
+                        else:
 
-                input_data[:, b] = train_qstory[:, batch[b]].detach()
+                            memory[0].data[-1, :d.shape[1], b] = torch.from_numpy(np.arange(d.data.numpy().shape[1])[::-1] + len(dictionary))
+
+
+                    input_data[:, b] = train_qstory[:, batch[b]].detach()
 
             for i in range(1, nhops):
                 with torch.no_grad():
-                    memory[i].data = memory[0].data.detach()
-            input_data.requires_grad_()
+                    memory[i].data = memory[0].data
+
+            #input_data.requires_grad_()
             model.zero_grad()
             for i in memory:
                 memory[i].zero_grad()
@@ -138,7 +138,7 @@ def train(train_story, train_questions, train_qstory, memory, model, loss_functi
         total_val_cost = 0.
         total_val_num  = 0
 
-        input_data.requires_grad_()
+        #input_data.requires_grad_()
 
         for k in range(int(math.floor(val_len / batch_size))):
             batch       = val_range[torch.arange(k * batch_size, (k + 1) * batch_size)]  # val_range[np.arange(k * batch_size, (k + 1) * batch_size)]
@@ -166,7 +166,7 @@ def train(train_story, train_questions, train_qstory, memory, model, loss_functi
                 input_data[:, b] = train_qstory[:, batch[b]]
 
             for i in range(1, nhops):
-                memory[i].data = memory[0].data
+                    memory[i].data = memory[0].data
 
             out = model(input_data)
             loss = loss_function(out.view(out.shape[1], -1), target_data)
@@ -245,7 +245,7 @@ def test(test_story, test_questions, test_qstory, memory, model, loss_function, 
         input_data = Variable(torch.zeros((max_words, batch_size), dtype=torch.float32))
 
 
-        target_data = test_questions[2, batch]
+        target_data = Variable(test_questions[2, batch])
 
         input_data[:]     = dictionary["nil"]
         memory[0].data[:] = dictionary["nil"]

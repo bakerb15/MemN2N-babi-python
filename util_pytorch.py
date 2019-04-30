@@ -127,12 +127,12 @@ def build_model_pytorch(general_config, USE_CUDA=False):
         # Type 1: adjacent weight tying
         memory[0].emb_query.weight = modle_emb.weight # memory[0].emb_query.share(model.modules[0])
         for i in range(1, nhops):
-            memory[i].emb_query.weight = memory[i - 1].emb_out.weight  # memory[i].emb_query.share(memory[i - 1].emb_out)
+            memory[i].emb_query.weight = memory[i - 1].emb_out.weight # memory[i].emb_query.share(memory[i - 1].emb_out)
         '''
         the original model grabs the second to last module where as pytorch
             last module is Linear with no bias because Softmax included in Crossentropy loss
         '''
-        model_last_linear.weight = memory[len(memory) - 1].emb_out.weight # model.modules[-2].share(memory[len(memory) - 1].emb_out)
+        model_last_linear.weight = memory[len(memory) - 1].emb_out.weight  # model.modules[-2].share(memory[len(memory) - 1].emb_out)
 
     elif share_type == 2:
         pass
@@ -144,7 +144,7 @@ def build_model_pytorch(general_config, USE_CUDA=False):
 
     if add_proj:
         for i in range(1, nhops):
-            proj[i].weight = proj[0].weight # proj[i].share(proj[0])
+            proj[i].weight = proj[0].weight  # proj[i].share(proj[0])
 
     # Cost
     # loss.size_average = False

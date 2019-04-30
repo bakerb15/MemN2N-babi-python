@@ -63,7 +63,7 @@ class MemN2N(object):
         Train MemN2N model using training data for tasks.
         """
 
-        np.random.seed(42)  # for reproducing
+        np.random.seed(120393)  # for reproducing
         train_data_arg = None
         test_data_arg = None
         if type(self.data_dir) is tuple:

@@ -34,7 +34,7 @@ class Memory(nn.Module):
         # In build.model.py, memory[i].nil_word = dictionary['nil']"
         self.nil_word = train_config["voc_sz"]
         self.config = train_config
-        self.data = train_config["FloatTensor"](np.zeros((self.sz, train_config["bsz"]), np.float32))
+        self.data = nn.Parameter(train_config["FloatTensor"](np.zeros((self.sz, train_config["bsz"]), np.float32)))
 
         self.emb_query = None
         self.emb_out = None
@@ -191,7 +191,8 @@ class MemoryL(Memory):
     def __init__(self, train_config):
         super(MemoryL, self).__init__(train_config)
         #self.data = np.zeros((train_config["max_words"], self.sz, train_config["bsz"]), np.float32)
-        self.data = train_config["FloatTensor"](torch.zeros((train_config["max_words"], self.sz, train_config["bsz"]), dtype=torch.float32))
+        self.data = nn.Parameter(train_config["FloatTensor"](torch.zeros((train_config["max_words"], self.sz, train_config["bsz"]), dtype=torch.float32)))
+
 
     def init_query_module(self):
 
