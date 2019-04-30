@@ -1,3 +1,15 @@
+
+##The oringal model was forked from: vinhkhuc/MemN2N-babi-python
+
+The original model was converted to python3 and ported to pytorch. Unable to obtain performance of original model. Something wrong with pytorch code
+
+Can train by calling:
+
+python3 demo_pytorch.qa_pytorch -train -d2 /home/bbaker/nlp-final-project/bAbI/data/dev
+
+
+
+
 ## End-To-End Memory Networks for Question Answering
 This is an implementation of MemN2N model in Python for the [bAbI question-answering tasks](http://fb.ai/babi) 
 as shown in the Section 4 of the paper "[End-To-End Memory Networks](http://arxiv.org/abs/1503.08895)". It is based on 
