@@ -68,7 +68,7 @@ class BabiConfigJoint(object):
     """
     Joint configuration for bAbI
     """
-    def __init__(self, train_story, train_questions, dictionary):
+    def __init__(self, train_story, train_questions, dictionary, linear_start=True):
 
         # TODO: Inherit from BabiConfig
         self.dictionary       = dictionary
@@ -89,7 +89,7 @@ class BabiConfigJoint(object):
 
         self.enable_time    = True   # add time embeddings
         self.use_bow        = False  # use Bag-of-Words instead of Position-Encoding
-        self.linear_start   = True
+        self.linear_start   = linear_start
         self.share_type     = 1      # 1: adjacent, 2: layer-wise weight tying
         self.randomize_time = 0.1    # amount of noise injected into time index
         self.add_proj       = False  # add linear layer between internal states

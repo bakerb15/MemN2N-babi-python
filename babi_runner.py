@@ -24,7 +24,7 @@ def run_test(data_dir, task_id, memn2n):
     print("Test for task %d ..." % task_id)
     test_files = None
     if type(data_dir) is tuple:
-        test_files = glob.glob('%s/qa%d_*_valid.txt' % (data_dir[1], task_id))
+        test_files = glob.glob('%s/qa%d_valid.txt' % (data_dir[1], task_id))
     else:
         test_files = glob.glob('%s/qa%d_*_test.txt' % (data_dir, task_id))
 
@@ -40,12 +40,15 @@ def run_test(data_dir, task_id, memn2n):
     with gzip.open(model_file, "rb") as f:
         self.reversed_dict, self.memory, self.model, self.loss, self.general_config = pickle.load(f)
     """
-    test(test_story, test_questions, test_qstory, memn2n.memory, memn2n.model, memn2n.loss, memn2n.general_config)
+    return test(test_story, test_questions, test_qstory, memn2n.memory, memn2n.model, memn2n.loss, memn2n.general_config)
 
 def run_all_tests(data_dir, memn2n):
     print("Training and testing for all tasks ...")
+    total_error = 0.0
     for t in range(1, 21):
-        run_test(data_dir, t,  memn2n)
+        total_error += run_test(data_dir, t,  memn2n)
+    avg_error = total_error/20
+    print('\nAverage Accuracy across all 20 tasks: {}'.format(1 - avg_error))
 
 def run_task(data_dir, task_id):
     """
@@ -125,7 +128,7 @@ if __name__ == "__main__":
     parser.add_argument("-d", "--data-dir", default="data/tasks_1-20_v1-2/en",
                         help="path to dataset directory (default: %(default)s)")
 
-    parser.add_argument("-m", "--model-file", default="trained_model/memn2n_model.pklz",
+    parser.add_argument("-m", "--model-file", default="trained_model_best/default_config_modelBest_TestAcc93percent_.pickle",
                         help="model file (default: %(default)s)")
 
     group = parser.add_mutually_exclusive_group()
@@ -148,9 +151,11 @@ if __name__ == "__main__":
 
     # Check if data is available
     data_dir = args.data_dir
+    '''
     if not os.path.exists(data_dir):
         print("The data directory '%s' does not exist. Please download it first." % data_dir)
         sys.exit(1)
+    '''
 
     if args.data_dir2 is not None:
         if not os.path.exists(args.data_dir2):
@@ -176,9 +181,9 @@ if __name__ == "__main__":
         m = MemN2N(args.data_dir, args.model_file)
         m.load_model()
         if args.all_tests:
-            run_all_tests(data_dir, m)
+            run_all_tests(args.data_dir, m)
         else:
-            run_test(data_dir, args.task, m)
+            run_test(args.data_dir, args.task, m)
     else:
         if args.all_tasks:
             run_all_tasks(data_dir)

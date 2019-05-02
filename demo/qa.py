@@ -11,7 +11,7 @@ import argparse
 import numpy as np
 
 from config import BabiConfigJoint
-from train_test import train, train_linear_start
+from train_test import train, train_linear_start, test
 from util import parse_babi_task, build_model
 
 
@@ -19,15 +19,19 @@ class MemN2N(object):
     """
     MemN2N class
     """
-    def __init__(self, data_dir, model_file):
+    def __init__(self, data_dir, model_file, config_switches=None):
 
-        self.data_dir   = data_dir
+        if type(data_dir) is not tuple:
+            self.data_dir   = os.path.join(data_dir, 'train'), os.path.join(data_dir, 'test')
+        else:
+            self.data_dir = data_dir
         self.model_file     = model_file
         self.reversed_dict  = None
         self.memory         = None
         self.model          = None
         self.loss           = None
         self.general_config = None
+        self.config_switches = config_switches
 
     def save_model(self):
         with gzip.open(self.model_file, "wb") as f:
@@ -42,11 +46,14 @@ class MemN2N(object):
             with gzip.open(self.model_file, "rb") as f:
                 self.reversed_dict, self.memory, self.model, self.loss, self.general_config = pickle.load(f)
 
-    def train(self):
+    def train_and_test(self, seed=None):
         """
         Train MemN2N model using training data for tasks.
         """
-        np.random.seed(42)  # for reproducing
+        if seed is None:
+            np.random.seed(42)  # for reproducing
+        else:
+            np.random.seed(seed)
         train_data_arg = None
         test_data_arg = None
         if type(self.data_dir) is tuple:
@@ -69,23 +76,56 @@ class MemN2N(object):
 
         # Parse test data just to expand the dictionary so that it covers all words in the test data too
         test_data_path = glob.glob(test_data_arg)
-        parse_babi_task(test_data_path, dictionary, False)
+        test_story, test_questions, test_qstory = parse_babi_task(test_data_path, dictionary, False)
 
         # Get reversed dictionary mapping index to word
         self.reversed_dict = dict((ix, w) for w, ix in dictionary.items())
 
         # Construct model
         self.general_config = BabiConfigJoint(train_story, train_questions, dictionary)
+
+        #check for config switches format [initial learning rate, linear start option, hops]
+        if self.config_switches is not None:
+            self.general_config.train_config["init_lrate"] = self.config_switches[0]
+
+            #linear start option is passed to babi config constructor function so no need to set here
+
+            # want equal of number of epochs for linear start and non linear start runs
+            if self.general_config.linear_start is True:
+                self.general_config.nepochs = 40
+                self.general_config.ls_nepochs = 20
+            else:
+                self.general_config.nepochs = 60
+
+            self.general_config.nhops = self.config_switches[2]
+
         self.memory, self.model, self.loss = build_model(self.general_config)
 
         # Train model
+        train_val_results = []
         if self.general_config.linear_start:
-            train_linear_start(train_story, train_questions, train_qstory,
+            train_val_results += train_linear_start(train_story, train_questions, train_qstory,
                                self.memory, self.model, self.loss, self.general_config)
         else:
-            train(train_story, train_questions, train_qstory,
-                  self.memory, self.model, self.loss, self.general_config)
+            train_val_results += train(train_story, train_questions, train_qstory,
+                                       self.memory, self.model, self.loss, self.general_config)
 
+        test_error = test(test_story, test_questions, test_qstory,
+                          self.memory, self.model, self.loss, self.general_config )
+
+        model_test_accuracy = (1.0 - test_error) * 100.0
+
+        train_val_file = self.model_file + 'train_val_accuracy.csv'
+        with open(train_val_file, 'w') as f:
+            f.write('epoch, TrainAccuracy, ValAccuracy\n')
+            epoch = 1
+            for item in train_val_results:
+                line = '{}, {:.3f}, {:.3f}\n'.format(epoch, item[0], item[1])
+                f.write(line)
+                epoch += 1
+
+
+        self.model_file += '_TestAcc{:.1f}percent_.pickle'.format(model_test_accuracy)
         # Save model
         self.save_model()
 
@@ -257,8 +297,6 @@ if __name__ == "__main__":
     # run with options -train -d2 /home/bbaker/nlp-final-project/bAbI/data
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("-d", "--data-dir", default="data/tasks_1-20_v1-2/en",
-                        help="path to dataset directory (default: %(default)s)")
     parser.add_argument("-m", "--model-file", default="trained_model/memn2n_model.pklz",
                         help="model file (default: %(default)s)")
     group = parser.add_mutually_exclusive_group()
@@ -271,10 +309,6 @@ if __name__ == "__main__":
     parser.add_argument("-d2", "--data-dir2", default=None,
                         help="path to directory containing a training and testing directory)")
     args = parser.parse_args()
-
-    if not os.path.exists(args.data_dir):
-        print("The data directory '%s' does not exist. Please download it first." % args.data_dir)
-        sys.exit(1)
 
     if args.data_dir2 is not None:
         if not os.path.exists(args.data_dir2):

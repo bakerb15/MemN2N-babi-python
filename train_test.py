@@ -27,7 +27,7 @@ def train(train_story, train_questions, train_qstory, memory, model, loss, gener
         "lrate": train_config["init_lrate"],
         "max_grad_norm": train_config["max_grad_norm"]
     }
-
+    train_val_error = []
     for ep in range(nepochs):
         # Decrease learning rate after every decay step
         if (ep + 1) % lrate_decay_step == 0:
@@ -129,6 +129,8 @@ def train(train_story, train_questions, train_qstory, memory, model, loss, gener
         val_error   = total_val_err / total_val_num
 
         print("%d | train error: %g | val error: %g" % (ep + 1, train_error, val_error))
+        train_val_error.append((train_error, val_error))
+    return train_val_error
 
 
 def train_linear_start(train_story, train_questions, train_qstory, memory, model, loss, general_config):
@@ -149,8 +151,11 @@ def train_linear_start(train_story, train_questions, train_qstory, memory, model
     general_config.lrate_decay_step = general_config.ls_lrate_decay_step
     train_config["init_lrate"]      = general_config.ls_init_lrate
 
+
+    train_val_results = []
+
     # Train with new settings
-    train(train_story, train_questions, train_qstory, memory, model, loss, general_config)
+    train_val_results += train(train_story, train_questions, train_qstory, memory, model, loss, general_config)
 
     # Add softmax back
     for i in range(general_config.nhops):
@@ -162,7 +167,9 @@ def train_linear_start(train_story, train_questions, train_qstory, memory, model
     train_config["init_lrate"]      = init_lrate2
 
     # Train with old settings
-    train(train_story, train_questions, train_qstory, memory, model, loss, general_config)
+    train_val_results += train(train_story, train_questions, train_qstory, memory, model, loss, general_config)
+
+    return train_val_results
 
 
 def test(test_story, test_questions, test_qstory, memory, model, loss, general_config):
@@ -210,3 +217,4 @@ def test(test_story, test_questions, test_qstory, memory, model, loss, general_c
 
     test_error = total_test_err / total_test_num
     print("Test error: %f" % test_error)
+    return test_error
